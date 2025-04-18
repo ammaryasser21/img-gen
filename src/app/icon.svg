@@ -1,0 +1,11 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  {/* Background Square (Adjust rx for rounded corners, fill for color) */}
+  <rect width="64" height="64" rx="8" fill="#4f46e5"/> {/* Indigo-600 like color */}
+
+  {/* Simple Sparkle/Star Element (Centered) */}
+  <path d="M32 12 L36 26 L50 30 L36 34 L32 48 L28 34 L14 30 L28 26 Z" fill="white"/>
+
+  {/* Optional: Smaller sparkles */}
+  <path d="M18 18 L19 21 L22 22 L19 23 L18 26 L17 23 L14 22 L17 21 Z" fill="#e0e7ff"/> {/* Light Indigo */}
+  <path d="M46 46 L47 49 L50 50 L47 51 L46 54 L45 51 L42 50 L45 49 Z" fill="#e0e7ff"/> {/* Light Indigo */}
+</svg>
