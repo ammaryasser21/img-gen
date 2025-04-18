@@ -89,14 +89,14 @@ export async function POST(request: Request) {
         // 4. Handle the response from Friendli.ai
         if (!friendliResponse.ok) {
             // Attempt to parse error details from Friendli and forward them
-            let errorDetails = `Friendli API responded with status ${friendliResponse.status}`;
+            let errorDetails;
             try {
                  const errorJson = await friendliResponse.json();
-                 errorDetails = errorJson.detail || errorJson.error?.message || errorJson.error || JSON.stringify(errorJson);
-            } catch(jsonError) {
+                 errorDetails = errorJson.detail ?? errorJson.error?.message ?? errorJson.error ?? JSON.stringify(errorJson);
+            } catch {
                  try {
                      errorDetails = await friendliResponse.text();
-                 } catch (textError) {
+                 } catch {
                      // Keep the original status text if reading body fails
                      errorDetails = friendliResponse.statusText;
                  }
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
 
         // 5. Process and forward the successful response
         const contentType = friendliResponse.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
+        if (contentType?.includes("application/json")) {
            const responseData = await friendliResponse.json();
             console.log("API Route: Forwarding successful JSON response from Friendli.");
             // Forward the successful JSON data (containing the image URL) back to the client
@@ -121,9 +121,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Received unexpected response format from Friendli API.' }, { status: 500 });
         }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         // Catch internal errors in the API route itself (e.g., JSON parsing failure)
         console.error('API Route Internal Error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error occurred in API route.' }, { status: 500 });
+        if (error instanceof Error) {
+            return NextResponse.json({ error: error.message || 'Internal Server Error occurred in API route.' }, { status: 500 });
+        }
+        return NextResponse.json({ error: 'Internal Server Error occurred in API route.' }, { status: 500 });
     }
 }

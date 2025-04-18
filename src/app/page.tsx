@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from 'next/image';
 
 // ==============================================================================
 // Configuration
@@ -190,7 +191,7 @@ export default function ImageGeneratorPage() {
                 // Error came from our API route (might have forwarded Friendli's error message)
                 console.error("Internal API Route Error:", responseData);
                 // Use the error message provided by the API route, or a default
-                throw new Error(responseData.error || `API request failed: ${internalApiResponse.statusText}`);
+                throw new Error(responseData.error ?? `API request failed: ${internalApiResponse.statusText}`);
             }
 
             // --- Process successful response forwarded from the internal API ---
@@ -213,10 +214,14 @@ export default function ImageGeneratorPage() {
                 ...previousHistory.slice(0, 9)
             ]);
 
-        } catch (errorObject: any) {
+        } catch (errorObject: unknown) {
             // Catch any errors during the fetch or processing
             console.error("Image Generation process failed:", errorObject);
-            setError(errorObject.message || "An unexpected error occurred during image generation.");
+            if (errorObject instanceof Error) {
+                setError(errorObject.message || "An unexpected error occurred during image generation.");
+            } else {
+                setError("An unexpected error occurred during image generation.");
+            }
             setGeneratedImageUrl(null); // Clear image on error
         } finally {
             // Always turn off loading indicator
@@ -263,7 +268,7 @@ export default function ImageGeneratorPage() {
             linkElement.href = blobUrlForDownload;
 
             // Generate a filename
-            const safePromptPart = lastGeneratedPrompt?.substring(0, 50).replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'generated';
+            const safePromptPart = lastGeneratedPrompt?.substring(0, 50).replace(/[^a-z0-9]/gi, '_').toLowerCase() ?? 'generated';
             // Determine file extension from the fetched blob's type
             const fileExtension = imageBlob.type.split('/')[1] || 'png';
             linkElement.download = `${safePromptPart}_${Date.now()}.${fileExtension}`;
@@ -275,9 +280,13 @@ export default function ImageGeneratorPage() {
 
             // Temporary blob URL will be revoked later by the useEffect cleanup
 
-        } catch (downloadError: any) {
+        } catch (downloadError: unknown) {
             console.error("Image download failed:", downloadError);
-            setError(`Download failed: ${downloadError.message}`);
+            if (downloadError instanceof Error) {
+                setError(`Download failed: ${downloadError.message}`);
+            } else {
+                setError("Download failed: An unknown error occurred.");
+            }
         } finally {
              setIsLoading(false); // Hide loading indicator
         }
@@ -385,7 +394,7 @@ export default function ImageGeneratorPage() {
                                                                     {styleName === 'none' ? 'No Style' : styleName}
                                                                 </Button>
                                                             </TooltipTrigger>
-                                                            <TooltipContent side="bottom"><p className="text-xs">Apply '{styleName}' style keywords</p></TooltipContent>
+                                                            <TooltipContent side="bottom"><p className="text-xs">Apply &apos;{styleName}&apos; style keywords</p></TooltipContent>
                                                         </Tooltip>
                                                     ))}
                                                 </div>
@@ -499,8 +508,8 @@ export default function ImageGeneratorPage() {
                                                          {generationHistory.map((historyItem, historyIndex) => (
                                                              <Tooltip key={historyIndex}>
                                                                  <TooltipTrigger asChild>
-                                                                     <div className="aspect-square rounded-md overflow-hidden border-2 border-transparent hover:border-primary transition-all duration-200 cursor-pointer relative group bg-muted/50" onClick={() => loadFromHistory(historyItem)} tabIndex={0} onKeyPress={(keyboardEvent) => keyboardEvent.key === 'Enter' && loadFromHistory(historyItem)} aria-label={`Load history item ${historyIndex + 1}`}>
-                                                                         <img src={historyItem.imageUrl} alt={`History item ${historyIndex + 1}: ${historyItem.prompt.substring(0, 30)}...`} className="w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy"/>
+                                                                     <div className="aspect-square rounded-md overflow-hidden border-2 border-transparent hover:border-primary transition-all duration-200 cursor-pointer relative group bg-muted/50" onClick={() => loadFromHistory(historyItem)}  onKeyUp={(keyboardEvent) => keyboardEvent.key === 'Enter' && loadFromHistory(historyItem)} aria-label={`Load history item ${historyIndex + 1}`}>   
+                                                                        <Image src={historyItem.imageUrl} alt={`History item ${historyIndex + 1}: ${historyItem.prompt.substring(0, 30)}...`} className="w-full h-full object-cover transition-transform group-hover:scale-105" width={200} height={200} />
                                                                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-1"></div>
                                                                      </div>
                                                                  </TooltipTrigger>
@@ -529,7 +538,7 @@ export default function ImageGeneratorPage() {
                                      {/* Action Footer */}
                                      {generatedImageUrl && !isLoading && (
                                          <CardFooter className="flex flex-col sm:flex-row justify-between items-center flex-wrap gap-4 p-4 sm:p-5 border-t bg-muted/30 flex-shrink-0">
-                                             <div className="flex-1 min-w-[150px] w-full sm:w-auto"><h4 className="text-xs font-medium mb-0.5 text-muted-foreground">Generated from prompt:</h4><Tooltip><TooltipTrigger asChild><p className="text-xs text-foreground line-clamp-2 cursor-help">{lastGeneratedPrompt || "Not available"}</p></TooltipTrigger><TooltipContent side="top" className="max-w-[300px]"><p className="text-xs">{lastGeneratedPrompt}</p></TooltipContent></Tooltip></div>
+                                             <div className="flex-1 min-w-[150px] w-full sm:w-auto"><h4 className="text-xs font-medium mb-0.5 text-muted-foreground">Generated from prompt:</h4><Tooltip><TooltipTrigger asChild><p className="text-xs text-foreground line-clamp-2 cursor-help">{lastGeneratedPrompt ?? "Not available"}</p></TooltipTrigger><TooltipContent side="top" className="max-w-[300px]"><p className="text-xs">{lastGeneratedPrompt}</p></TooltipContent></Tooltip></div>
                                              <div className="flex gap-2 flex-wrap justify-end w-full sm:w-auto">
                                                  <Tooltip><TooltipTrigger asChild><Button variant="outline" size="sm" onClick={handleCopyPrompt} disabled={!lastGeneratedPrompt} className="h-9 relative px-2.5" aria-label="Copy Prompt">{isCopied ? (<Check className="h-4 w-4 text-green-500" />) : (<Copy className="h-4 w-4" />)}<span className="ml-1.5 text-xs hidden sm:inline">Copy</span></Button></TooltipTrigger><TooltipContent><p>Copy prompt</p></TooltipContent></Tooltip>
                                                  <Tooltip><TooltipTrigger asChild><Button variant="outline" size="sm" onClick={handleDownloadImage} disabled={!generatedImageUrl || isLoading} className="h-9 px-2.5" aria-label="Download Image">{isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}<span className="ml-1.5 text-xs hidden sm:inline">Download</span></Button></TooltipTrigger><TooltipContent><p>Download image</p></TooltipContent></Tooltip>
